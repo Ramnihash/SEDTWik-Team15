@@ -5,6 +5,7 @@ from indexing.segment_index import build_segment_index
 from burst_detection.bursty_segments import find_bursty_segments
 from clustering.event_cluster import cluster_segments
 from summarization.event_summary import summarize_event
+from segmentation.wikipedia_filter import filter_wikipedia_segments
 
 
 def main():
@@ -31,10 +32,15 @@ def main():
     )
 
     segments = [
-    segment
-    for segment in bursty.keys()
-    if not segment.startswith("#")
-]
+        segment
+        for segment in bursty.keys()
+        if not segment.startswith("#")
+    ]
+
+    wikipedia_segments = filter_wikipedia_segments(segments)
+
+    if wikipedia_segments:
+        segments = wikipedia_segments
     clusters = cluster_segments(segments)
 
     print("\nDetected Events")
