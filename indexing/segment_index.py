@@ -8,30 +8,22 @@ def build_segment_index(tweets):
         for segment in segments:
             index[segment].append({
                 "tweet_id": tweet_id,
-                "timestamp": timestamp
+                "timestamp": timestamp,
+                "is_hashtag": segment.startswith("#")
             })
 
     return dict(index)
 
 
 if __name__ == "__main__":
-    sample_data = [
+    tweets = [
         (
             1,
             "2026-10-01",
-            ["breaking news", "nobel peace prize"]
-        ),
-        (
-            2,
-            "2026-10-01",
-            ["nobel peace prize", "ceremony happening"]
-        ),
+            ["nobel peace prize", "#nobelprize"]
+        )
     ]
 
-    index = build_segment_index(sample_data)
+    index = build_segment_index(tweets)
 
-    print("Segment Index:")
-
-    for segment, tweets in index.items():
-        print(segment, "->", tweets)
-    
+    print(index)

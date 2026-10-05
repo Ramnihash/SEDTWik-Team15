@@ -17,33 +17,48 @@ def find_bursty_segments(segment_index, min_frequency=2, min_score=1.0):
         if unique_dates == 0:
             continue
 
-        score = frequency / unique_dates
+        hashtag_weight = 2 if tweets[0]["is_hashtag"] else 1
+        score = (frequency / unique_dates) * hashtag_weight
 
         if score >= min_score:
             bursty[segment] = {
                 "frequency": frequency,
                 "timestamps": timestamps,
-                "score": score
+                "score": score,
+                "hashtag_weight": hashtag_weight
             }
 
     return bursty
 
 
 if __name__ == "__main__":
-    sample_index = {
+    segment_index = {
         "nobel peace prize": [
-            {"tweet_id": 1, "timestamp": "2026-10-01"},
-            {"tweet_id": 2, "timestamp": "2026-10-01"},
-            {"tweet_id": 3, "timestamp": "2026-10-02"}
+            {
+                "tweet_id": 1,
+                "timestamp": "2026-10-01",
+                "is_hashtag": False
+            },
+            {
+                "tweet_id": 2,
+                "timestamp": "2026-10-01",
+                "is_hashtag": False
+            }
         ],
-        "breaking news": [
-            {"tweet_id": 1, "timestamp": "2026-10-01"}
+        "#nobelprize": [
+            {
+                "tweet_id": 1,
+                "timestamp": "2026-10-01",
+                "is_hashtag": True
+            },
+            {
+                "tweet_id": 2,
+                "timestamp": "2026-10-01",
+                "is_hashtag": True
+            }
         ]
     }
 
-    bursty = find_bursty_segments(sample_index)
+    result = find_bursty_segments(segment_index)
 
-    print("Bursty Segments:")
-
-    for segment, data in bursty.items():
-        print(segment, "->", data)
+    print(result)
