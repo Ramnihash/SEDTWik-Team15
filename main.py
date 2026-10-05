@@ -6,6 +6,7 @@ from burst_detection.bursty_segments import find_bursty_segments
 from clustering.event_cluster import cluster_segments
 from summarization.event_summary import summarize_event
 from segmentation.wikipedia_filter import filter_wikipedia_segments
+from evaluation import evaluate_events
 
 
 def main():
@@ -41,7 +42,10 @@ def main():
 
     if wikipedia_segments:
         segments = wikipedia_segments
+
     clusters = cluster_segments(segments)
+
+    events = []
 
     print("\nDetected Events")
     print("=" * 50)
@@ -59,10 +63,27 @@ def main():
             for segment in cluster
         )
 
+        events.append({
+            "frequency": frequency,
+            "burst_score": score
+        })
+
         print(f"\nEvent {i}")
         print("Event:", summary)
         print("Frequency:", frequency)
         print("Burst Score:", round(score, 2))
+
+    evaluation = evaluate_events(
+        df,
+        events
+    )
+
+    print("\nEvaluation Results")
+    print("=" * 50)
+    print("Total Tweets:", evaluation["total_tweets"])
+    print("Total Events:", evaluation["total_events"])
+    print("Average Frequency:", round(evaluation["average_frequency"], 2))
+    print("Average Burst Score:", round(evaluation["average_burst_score"], 2))
 
 
 if __name__ == "__main__":
