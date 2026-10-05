@@ -1,32 +1,35 @@
-from collections import Counter
+import networkx as nx
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 def summarize_event(cluster):
     if not cluster:
         return ""
 
-    counts = Counter(cluster)
+    if len(cluster) == 1:
+        return cluster[0]
 
-    summary = max(
-        cluster,
-        key=lambda segment: (
-            len(segment.split()),
-            counts[segment]
-        )
-    )
+    vectorizer = TfidfVectorizer()
+    matrix = vectorizer.fit_transform(cluster)
 
-    return summary
+    similarity = cosine_similarity(matrix)
+
+    graph = nx.from_numpy_array(similarity)
+
+    scores = nx.pagerank(graph)
+
+    best_index = max(scores, key=scores.get)
+
+    return cluster[best_index]
 
 
 if __name__ == "__main__":
-    sample_cluster = [
+    cluster = [
         "nobel peace prize",
         "nobel peace prize announced today",
-        "peace prize ceremony",
-        "nobel peace prize"
+        "peace prize ceremony today"
     ]
 
-    summary = summarize_event(sample_cluster)
-
     print("Event Summary:")
-    print(summary)
+    print(summarize_event(cluster))
