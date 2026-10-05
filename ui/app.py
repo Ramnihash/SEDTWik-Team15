@@ -75,7 +75,7 @@ if uploaded_file is not None:
             summary = summarize_event(cluster)
 
             frequency = max(
-                bursty[segment]["frequency"]
+                bursty[segment]["frequency"] * bursty[segment]["hashtag_weight"]
                 for segment in cluster
             )
 
