@@ -1,4 +1,3 @@
-
 import pandas as pd
 from collections import Counter
 
@@ -8,7 +7,8 @@ from burst_detection.bursty_segments import find_bursty_segments
 from clustering.event_cluster import cluster_segments
 from summarization.event_summary import summarize_event
 from segmentation.wikipedia_filter import filter_wikipedia_segments
-from evaluation import evaluate_events
+from evaluation import evaluate_events, count_event_tweets
+from novelty.novelty_detector import analyze_event_novelty
 
 
 def main():
@@ -32,11 +32,16 @@ def main():
     for _, row in df.iterrows():
         segments = segment_tweet(row["text"])
         segment_counts.update(segments)
-        tweet_segments.append((row["tweet_id"], row["timestamp"], segments))
+        tweet_segments.append(
+            (row["tweet_id"], row["timestamp"], segments)
+        )
 
     segment_index = build_segment_index(tweet_segments)
 
-    bursty = find_bursty_segments(segment_index, min_frequency=2)
+    bursty = find_bursty_segments(
+        segment_index,
+        min_frequency=2
+    )
 
     if historical_mode and not bursty:
         detection_mode = "Historical Frequency Analysis"
@@ -47,7 +52,8 @@ def main():
                 "hashtag_weight": 1
             }
             for segment, frequency in segment_counts.items()
-            if frequency >= min_frequency and not segment.startswith("#")
+            if frequency >= min_frequency
+            and not segment.startswith("#")
         }
         score_label = "Frequency Score"
     else:
@@ -70,7 +76,8 @@ def main():
 
     for cluster in clusters:
         valid_segments = [
-            segment for segment in cluster
+            segment
+            for segment in cluster
             if segment in candidates
         ]
 
@@ -78,8 +85,14 @@ def main():
             continue
 
         summary = summarize_event(valid_segments)
-        frequency = max(candidates[segment]["frequency"] for segment in valid_segments)
-        score = max(candidates[segment]["score"] for segment in valid_segments)
+        frequency = count_event_tweets(
+            valid_segments,
+            segment_index
+        )
+        score = max(
+            candidates[segment]["score"]
+            for segment in valid_segments
+        )
 
         events.append({
             "summary": summary,
@@ -88,7 +101,13 @@ def main():
             "segments": valid_segments
         })
 
-    events.sort(key=lambda event: (event["frequency"], event["score"]), reverse=True)
+    events.sort(
+        key=lambda event: (
+            event["frequency"],
+            event["score"]
+        ),
+        reverse=True
+    )
 
     print(f"\nDetection Mode: {detection_mode}")
     print("\nDetected Events")
@@ -99,12 +118,43 @@ def main():
         print("Event:", event["summary"])
         print("Frequency:", event["frequency"])
         print(f"{score_label}:", round(event["score"], 2))
-        print("Related Segments:", ", ".join(event["segments"][:8]))
+        print(
+            "Related Segments:",
+            ", ".join(event["segments"][:8])
+        )
+
+    print("\nNovelty Analysis")
+    print("=" * 50)
+
+    if historical_mode:
+        print(
+            "Novelty Status: Unavailable for the Boston dataset "
+            "because timestamps are unknown"
+        )
+    else:
+        event_segments = {
+            event["summary"]: event["segments"]
+            for event in events
+        }
+
+        novelty_results = analyze_event_novelty(
+            df.to_dict("records"),
+            event_segments
+        )
+
+        for event_name, details in novelty_results.items():
+            print("Event:", event_name)
+            print("Previous Window:", details["previous_count"])
+            print("Current Window:", details["current_count"])
+            print("Status:", details["status"])
+            print()
 
     evaluation_events = [
         {
             "frequency": event["frequency"],
-            "burst_score": event["score"] if not historical_mode else 0
+            "burst_score": (
+                event["score"] if not historical_mode else 0
+            )
         }
         for event in events
     ]
@@ -116,6 +166,33 @@ def main():
     print("Total Tweets:", evaluation["total_tweets"])
     print("Total Events:", evaluation["total_events"])
     print("Average Frequency:", round(evaluation["average_frequency"], 2))
+    print(
+        "Events per 100 Tweets:",
+    round(evaluation["events_per_100_tweets"], 2)
+    )
+    print(
+        "Event Coverage:",
+        round(evaluation["event_coverage"] * 100, 2),
+    "%"
+    )
+    print("Highest Event Frequency:", evaluation["highest_frequency"])
+
+    if historical_mode and not bursty:
+        average_score = (
+            sum(event["score"] for event in events) / len(events)
+        if events else 0
+        )
+        print("Average Frequency Score:", round(average_score, 2))
+        print(
+            "Temporal Burst Scores: Unavailable because "
+            "timestamps are unknown"
+            )
+    else:
+        print(
+            "Average Burst Score:",
+        round(evaluation["average_burst_score"], 2)
+    )
+    print("Highest Burst Score:", evaluation["highest_burst_score"])
 
     if historical_mode and not bursty:
         average_score = (
@@ -123,9 +200,15 @@ def main():
             if events else 0
         )
         print("Average Frequency Score:", round(average_score, 2))
-        print("Temporal Burst Scores: Unavailable because timestamps are unknown")
+        print(
+            "Temporal Burst Scores: Unavailable because "
+            "timestamps are unknown"
+        )
     else:
-        print("Average Burst Score:", round(evaluation["average_burst_score"], 2))
+        print(
+            "Average Burst Score:",
+            round(evaluation["average_burst_score"], 2)
+        )
 
 
 if __name__ == "__main__":

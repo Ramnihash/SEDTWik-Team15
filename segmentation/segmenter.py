@@ -1,8 +1,8 @@
-
 import re
 from nltk.corpus import stopwords
 
 STOP_WORDS = set(stopwords.words("english"))
+STOP_WORDS.discard("out")
 
 
 def segment_tweet(text):
@@ -31,6 +31,7 @@ def segment_tweet(text):
 
 
 if __name__ == "__main__":
-    tweet = "Breaking news: Nobel Peace Prize announced today #NobelPrize"
+    tweet = "National Coming Out Day celebrations today #ComingOutDay"
     print("Tweet:", tweet)
     print("Segments:", segment_tweet(tweet))
+    

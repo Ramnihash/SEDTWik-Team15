@@ -9,9 +9,16 @@ WIKIPEDIA_TERMS = {
 }
 
 
+def normalize_phrase(segment):
+    return re.sub(r"\s+", " ", segment.lower()).strip()
+
+
 def is_wikipedia_phrase(segment):
-    normalized = re.sub(r"\s+", " ", segment.lower()).strip()
-    return normalized in WIKIPEDIA_TERMS
+    normalized = normalize_phrase(segment)
+    return any(
+        term == normalized or term in normalized
+        for term in WIKIPEDIA_TERMS
+    )
 
 
 def filter_wikipedia_segments(segments):
@@ -27,7 +34,8 @@ if __name__ == "__main__":
         "nobel peace prize",
         "random phrase",
         "justin bieber",
-        "presidential debate"
+        "presidential debate",
+        "national coming out day celebration"
     ]
 
     print(filter_wikipedia_segments(segments))
