@@ -1,3 +1,4 @@
+
 def find_bursty_segments(segment_index, min_frequency=2, min_score=1.0):
     bursty = {}
 
@@ -12,10 +13,17 @@ def find_bursty_segments(segment_index, min_frequency=2, min_score=1.0):
             for tweet in tweets
         ]
 
-        unique_dates = len(set(timestamps))
+        valid_timestamps = [
+            timestamp
+            for timestamp in timestamps
+            if timestamp
+            and str(timestamp).lower() not in {"historical_unknown", "unknown", "none", "nan"}
+        ]
 
-        if unique_dates == 0:
+        if not valid_timestamps:
             continue
+
+        unique_dates = len(set(valid_timestamps))
 
         hashtag_weight = 2 if tweets[0]["is_hashtag"] else 1
         score = (frequency / unique_dates) * hashtag_weight
@@ -23,7 +31,7 @@ def find_bursty_segments(segment_index, min_frequency=2, min_score=1.0):
         if score >= min_score:
             bursty[segment] = {
                 "frequency": frequency,
-                "timestamps": timestamps,
+                "timestamps": valid_timestamps,
                 "score": score,
                 "hashtag_weight": hashtag_weight
             }
